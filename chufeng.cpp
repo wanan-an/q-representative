@@ -6,7 +6,6 @@
 using namespace std;
 
 struct Node {
-    bool flag = true;
     vector<int> edges;
     vector<int> path;
     vector<Node*> children;
@@ -46,7 +45,7 @@ int compare(vector<int> set1, vector<int> set2) {
     return 0;
 }
 
-
+//用于在数组中查找指定元素是否存在
 bool search(vector<int> lst, int ans) {
     return (find(lst.begin(), lst.end(), ans) != lst.end());
 }
@@ -95,7 +94,7 @@ void preparetion() {
 
 
 //start表示初始结点，p表示路径中包含的中间结点数，q为代表集大小，trees表示上一级的树集
-Qtree growth1(int start, int end, int p, int q, vector<Qtree> trees) {
+Qtree grow(int start, int end, int p, int q, vector<Qtree> trees) {
     Qtree result;
     int flag = false;
     queue<Node*> QtNode;
@@ -104,10 +103,9 @@ Qtree growth1(int start, int end, int p, int q, vector<Qtree> trees) {
         if (trees[m].root != nullptr) {
             flag = true;
             vector<int> temp(trees[m].root->edges);
-            temp.push_back(m);
+            temp.insert(temp.begin(), m);
             Node* root = new Node(temp);
             result.root = root;
-            //cout << "root is:" << result.root->edges[0];
             break;
         }
     }
@@ -133,17 +131,18 @@ Qtree growth1(int start, int end, int p, int q, vector<Qtree> trees) {
                     child->path = node->path;
                     child->path.push_back(node->edges[j]);
                     for (int k : adjList[start]) {
-                        //不选取当前邻接结点的三种情况
+                        /*不选取当前邻接结点的三种情况
+                        1、邻接结点为最终结点   
+                        2、从邻接结点到最终结点的路径上经过初始结点    
+                        3、邻接结点与最终结点间不存在经过长为p的路径*/
                         if (k == end || search(child->path, k) || trees[k].root == nullptr) {
-                            cout << k << "not suit" << endl;
                             continue;
                         }
                         else {
-                            cout << "start" << endl;
                             vector<int> ans = Find(trees[k].root, child->path);
-                            if (!ans.empty() && !search(ans, start)) {
-                                ans.push_back(k);
-                                cout << "insert: " << k << endl;
+                            //此处额外在p等于1的情况下认为存在，因为p等于0的树中空集也表示一条路径
+                            if ((!ans.empty() || p == 1) && !search(ans, start)) {
+                                ans.insert(ans.begin(), k);
                                 child->edges = ans;
                                 QtNode.push(child);
                                 break;
@@ -159,39 +158,61 @@ Qtree growth1(int start, int end, int p, int q, vector<Qtree> trees) {
     return result;
 }
 
+//打印结点数据
+void PrintNode(Node* node) {
+    cout << "( ";
+    if (node->edges.size() == 0) {
+        cout << "λ" << " ";
+    }
+    for (int i : node->edges) {
+        cout << i << " ";
+    }
+    cout << ") ";
+}
+
+
+//按层打印树的所有结点
+void PrintTree(Qtree tree) {
+    if (tree.root == nullptr) {
+        cout << "tree not exist!" << endl;
+    }
+    else {
+        int floor = 0;
+        queue<Node*> qe;
+        qe.push(tree.root);
+        while (!qe.empty()) {
+            cout << "floor" << floor << ": ";
+            int count = qe.size();
+            for (int i = 0; i < count; i++) {
+                Node* node = qe.front();
+                qe.pop();
+                PrintNode(node);
+                for (auto child : node->children) {
+                    qe.push(child);
+                }
+            }
+            floor++;
+            cout << endl;
+        }            
+    }
+}
+
 
 int main() {
-    TreeList.reserve(1000);
+    //TreeList.reserve(1000);
     preparetion();
-    /*for (int p = 1; p < 3; p++) {
+    for (int p = 1; p < 3; p++) {
         for (int i = 0; i < 10; i++) {
-            Qtree tree = growth1(i, 10, p, 3 - p, TreeList);
-            cout << "tree num: " << i << "tree size: " << p << "tree height: " << 3 - p << endl;
+            Qtree tree = grow(i, 10, p, 5 - p, TreeList);
             TreeList2.push_back(tree);
         }
         TreeList.swap(TreeList2);
         vector<Qtree>().swap(TreeList2);
-    }*/
-    Qtree q = growth1(1, 10, 1, 3, TreeList);
-    cout << "over!" << endl;
-    if (q.root == nullptr) {
-        cout << "no such tree" << endl;
     }
-    else {
-        if (q.root->edges.size() == 0) {
-            cout << "tree is empty" << endl;
-        }
-        else {
-            cout << q.root->children[0]->path[0];
-        }
+    cout << "trees generated!" << endl;
+    for (int i = 0; i < TreeList.size(); i++){
+        cout << "tree" << i << ":" << endl;
+        PrintTree(TreeList[i]);
     }
-    
-    //for (int i = 0; i < 10; i++) {
-    //    if (TreeList2[i].root == nullptr) {
-    //    }
-    //    else {
-    //        cout << "第" << i << "棵树根节点为:" << TreeList2[i].root->edges[0] << endl;
-    //    }
-    //}
     return 0;
 }
